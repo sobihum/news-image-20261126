@@ -1,49 +1,69 @@
-# The World in One Image — Thursday 26 November 2026
+# The World in One Image — Thursday 26 November 2026 (v3)
 
-[![make.fun](https://make.fun/badge/news-image-20261126.svg)](https://make.fun/c/news-image-20261126)
-[![rank](https://make.fun/badge/news-image-20261126/sobihum/news-image-20261126/rank.svg)](https://make.fun/c/news-image-20261126)
-[![reward](https://make.fun/badge/news-image-20261126/sobihum/news-image-20261126/reward.svg)](https://make.fun/c/news-image-20261126)
+![news-image-20261126](https://make.fun/badge/news-image-20261126.svg)
+![rank](https://make.fun/badge/sobihum/news-image-20261126/rank.svg)
+![reward](https://make.fun/badge/sobihum/news-image-20261126/reward.svg)
 
-Entry for the [make.fun bounty **"Sum up 26 November's world news in one image"**](https://make.fun/bounty/news-image-20261126) — v2.
+One image summing up the world news of Thursday 26 November 2026:
+**30 stories, one day** — the clean v1 layout, extended with nine more
+verified stories and two corrections. No world map, no 40-story density.
 
-![The World in One Image — Thursday 26 November 2026](entry.png)
+## The image
 
-## What it is
+`entry.png` — 1024 × 1024, 285,224 bytes, rendered in this session from
+fresh HTML/CSS with Playwright (Chromium Headless Shell 140) and verified
+byte-identical across repeated renders.
 
-One 1024×1024 image summing up the world news of **Thursday 26 November 2026** — **40 stories**, each labelled with when it was first reported:
-
-| Tier | Count | Contents |
-| --- | --- | --- |
-| Heroes | 3 | Houthi–Saudi war widening to Hormuz (Brent $94.71) · Trump tariffs + Nasdaq/Nvidia sell-off · Cairo tanker fire, 31 dead |
-| Mid band | 8 | Bogor mine (13 dead, 13 trapped — freshest story of the day) · Hormuz mine claims · Sudan · Ebola in DR Congo · Gaza · leaked Russian death toll · EU summit · Solomon Islands |
-| In brief | 12 | Shenzhou-24 · Lukoil · Lebanon · Zambia · Libya · Congo cobalt · Australia's Digital Duty of Care · Bangladesh · Venezuela · Colombia · Nigeria · Macy's parade |
-| Also in the news | 6 | ESA Hera · Champions League · F1 · cricket · hockey · Ecuador floods |
-| Also today | 11 | North Korea · Canary Islands · Mississippi · Brazil–Argentina · Andy Taylor · Sooryavanshi · Malaysia vs Google · Huawei · Poland · Ramaphosa · Iowa |
-
-Also on the image: a hand-drawn world map with story markers, a 26 Nov UTC timeline, a "Day in Numbers" strip, and a **Claimed vs Confirmed** honesty box.
-
-## Honesty
-
-Claims are labelled as claims, not facts:
-
-- The Houthi claim of a hit on the Ras Tanura refinery is **not independently confirmed** — only 4 drones intercepted; light damage confirmed at Jazan.
-- Iran's Hormuz mine claims are **unverified claims**, not confirmed sinkings.
-- The 490,334 Russian deaths come from **leaked records**; above 720,000 is a **modelled estimate**.
-- Zambia's treason case is a **charge, not a conviction**.
-- Nasdaq/Nvidia figures are given as **intraday vs close** pairs, never mixed.
+- **Masthead:** THURSDAY 26 NOVEMBER 2026
+- **3 heroes:** Houthi claim on the Ras Tanura refinery (Brent $94.61,
+  +3.5%); Trump tariffs roil markets (Nasdaq −4.17% intraday, closed
+  −0.62%; Nvidia −8.6% intraday, closed −3.91%); Cairo tanker fire kills 31.
+- **Around the world (8):** Bogor gold mine — 13 dead, 13 trapped;
+  Ukraine claims 5 Russian jets hit at Savasleyka (3 MiG-31 + 2 Su-34,
+  labelled CLAIM); Ebola in Congo — 11,613 cases, 5,678 dead; EU summit
+  debates a €45bn loan for Ukraine (a proposal under debate, not agreed);
+  RSF drones kill 19 civilians in Blue Nile; Gaza strike kills a Hamas
+  security chief and his family; leak — 490,334 Russian soldiers dead in
+  Ukraine; FCC clears SpaceX's plan for 1m satellites in orbit.
+- **In brief (15):** first Pakistani astronaut in orbit; Boehly group buys
+  Lukoil assets ($10bn swap); Bangladesh garment wage up 36% to Tk17,000;
+  North Korea expels the Swiss envoy; Venezuela debt $237.5bn (242% of
+  GDP); Colombia — 76 hostages freed in the Cartagena supermarket siege;
+  Nigeria, at least 30 killed; Canary Islands, a record 2,100 migrants in
+  a day; Macy's parade postponed, first time in 100 years; Mississippi
+  plane crash kills six, one family; judges urge dropping the Netanyahu
+  bribery case (Case 4000 — a recommendation, not a ruling); Puerto Rico
+  court cancels the Luma power deal, 5–4; Ukraine sinks a Russian corvette
+  in Libya; Solomon Islands picks Australia over China (AU$740m over
+  10 years); Zambia charges the opposition leader with treason.
+- **Also today (4):** Andy Taylor (Duran Duran) dies at 65; Sooryavanshi,
+  15, smashes 204 off 53 balls; Malaysia sues Google for $146m; Huawei
+  guilty on 10 of 12 counts in New York.
+- **Claimed vs confirmed box:** the Ras Tanura hit and the Savasleyka jet
+  damage are claims, not confirmed facts; above 720,000 Russian deaths is
+  a modelled estimate; the €45bn EU loan is a proposal under debate.
 
 ## Sources
 
-Reuters · BBC · AP · Xinhua · ESA · Mediazona · WHO · CNN · The Times · ReliefWeb. Events first reported 26 Nov 2026 unless dated on the image.
+Reuters, BBC Russian, AP, Xinhua, ESA, Mediazona, WHO, CNN, ReliefWeb.
+Key figures were cross-checked against at least two independent sources;
+claims are labelled CLAIM / KLAIM in the image. Bogor (13 dead / 13
+trapped) and the EU summit (no decision yet) were re-verified on 26 Nov
+before this build.
 
-## How the entry works
-
-`entry.png` is the finished image (1024×1024, under 1 MiB). `main.ts` (Node 22, stdlib only, no network) validates it — PNG signature, IHDR dimensions, and a full chunk walk with CRC-32 checks on every chunk — then copies it to the output directory:
+## How to run
 
 ```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+MAKEFUN_OUTPUT_DIR=out node main.ts
+# entry.png OK: 1024x1024, 285224 bytes -> out/entry.png
 ```
+
+`main.ts` (Node 22+, stdlib only, no network) validates the bundled
+`entry.png` — PNG signature, every chunk's CRC-32, IHDR dimensions
+(1024 × 1024), bit depth 8, colour type 2 (truecolour RGB), IEND with no
+trailing bytes, size ≤ 1 MiB — then copies it to
+`$MAKEFUN_OUTPUT_DIR/entry.png`. Two runs produce byte-identical output.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see `LICENSE`.

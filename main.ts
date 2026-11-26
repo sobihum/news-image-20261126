@@ -1,86 +1,82 @@
-// main.ts — entrypoint for "The World in One Image" (news-image-20261126, v2).
-// What it does: copy the pre-rendered entry.png that ships in this repo into
-// the make.fun output directory, after validating the PNG byte-for-byte:
-// signature, IHDR (1024x1024, 8-bit, truecolour), and a full chunk walk
-// with CRC-32 checks on every chunk. Stdlib only, no network, no deps.
-
-import { copyFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+// The World in One Image — Thursday 26 November 2026 (v3).
+// Entry generator: validates the bundled 1024x1024 PNG and copies it to
+// the output directory. No network, no dependencies, stdlib only.
+// The image itself was rendered in this session from fresh HTML/CSS
+// (see the build notes in README.md); this file only checks it and
+// places it where the harness expects it.
+import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SRC = join(HERE, "entry.png");
-const OUT_DIR = process.env.MAKEFUN_OUTPUT_DIR || "out";
-const DEST = resolve(OUT_DIR, "entry.png");
+const SOURCE = join(HERE, "entry.png");
+const OUT_DIR = process.env.MAKEFUN_OUTPUT_DIR || join(HERE, "out");
+const OUT = join(OUT_DIR, "entry.png");
+const MAX_BYTES = 1024 * 1024;
+const EXPECT_W = 1024;
+const EXPECT_H = 1024;
 
-// --- CRC-32 (IEEE 802.3, polynomial 0xEDB88320), built from scratch ---
+// CRC-32 (IEEE 802.3) table, built once at startup.
 const CRC_TABLE: number[] = [];
 for (let n = 0; n < 256; n++) {
   let c = n;
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-  CRC_TABLE[n] = c >>> 0;
+  CRC_TABLE.push(c >>> 0);
 }
 function crc32(buf: Buffer): number {
-  let crc = 0xffffffff;
-  for (const byte of buf) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  return (crc ^ 0xffffffff) >>> 0;
+  let c = 0xffffffff;
+  for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
 }
 
-// --- PNG validation: signature + chunk walk with CRC on every chunk ---
-function validatePng(buf: Buffer): { width: number; height: number; chunks: number } {
-  const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  if (buf.length < 8 || !buf.subarray(0, 8).equals(SIG)) {
-    throw new Error("not a PNG file (bad signature)");
-  }
-  let off = 8;
-  let chunks = 0;
-  let width = 0;
-  let height = 0;
-  let sawIend = false;
-  let sawIdat = false;
-  while (off + 8 <= buf.length) {
-    const len = buf.readUInt32BE(off);
-    const type = buf.toString("ascii", off + 4, off + 8);
-    if (off + 12 + len > buf.length) throw new Error(`chunk ${type} overruns file`);
-    const storedCrc = buf.readUInt32BE(off + 8 + len);
-    const actualCrc = crc32(buf.subarray(off + 4, off + 8 + len));
-    if (storedCrc !== actualCrc) {
-      throw new Error(`CRC mismatch in chunk ${type} (stored ${storedCrc}, computed ${actualCrc})`);
-    }
-    if (chunks === 0 && type !== "IHDR") throw new Error("first chunk is not IHDR");
-    if (type === "IHDR") {
-      width = buf.readUInt32BE(off + 8);
-      height = buf.readUInt32BE(off + 12);
-      const bitDepth = buf[off + 16];
-      const colorType = buf[off + 17];
-      if (width !== 1024 || height !== 1024) {
-        throw new Error(`expected 1024x1024, got ${width}x${height}`);
-      }
-      if (bitDepth !== 8 || (colorType !== 2 && colorType !== 6)) {
-        throw new Error(`unexpected IHDR: bitDepth=${bitDepth} colorType=${colorType}`);
-      }
-    }
-    if (type === "IEND") {
-      sawIend = true;
-      if (off + 12 + len !== buf.length) throw new Error("trailing bytes after IEND");
-    }
-    if (type === "IDAT") sawIdat = true;
-    chunks++;
-    off += 12 + len;
-  }
-  if (!sawIend) throw new Error("missing IEND chunk");
-  if (!sawIdat) throw new Error("missing IDAT chunk (no image data)");
-  if (off !== buf.length) throw new Error("chunk walk did not end at EOF");
-  return { width, height, chunks };
+function fail(msg: string): never {
+  throw new Error(`entry.png validation failed: ${msg}`);
 }
 
-const png = readFileSync(SRC);
-const info = validatePng(png);
+const data = readFileSync(SOURCE);
+if (data.length > MAX_BYTES) fail(`file is ${data.length} bytes, over the 1 MiB limit`);
+const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+if (!data.subarray(0, 8).equals(PNG_SIG)) fail("bad PNG signature");
+
+// Walk the chunk list, checking every CRC-32, and read the IHDR size.
+let off = 8;
+let sawIhdr = false;
+let sawIend = false;
+let width = 0;
+let height = 0;
+while (off + 12 <= data.length) {
+  const len = data.readUInt32BE(off);
+  const type = data.subarray(off + 4, off + 8).toString("ascii");
+  const chunkEnd = off + 12 + len;
+  if (chunkEnd > data.length) fail(`chunk ${type} overruns the file`);
+  const stored = data.readUInt32BE(off + 8 + len);
+  const actual = crc32(Buffer.concat([data.subarray(off + 4, off + 8), data.subarray(off + 8, off + 8 + len)]));
+  if (stored !== actual) fail(`chunk ${type} CRC mismatch`);
+  if (type === "IHDR") {
+    sawIhdr = true;
+    width = data.readUInt32BE(off + 8);
+    height = data.readUInt32BE(off + 12);
+    // IHDR data layout: width(4) height(4) bit-depth(1) colour-type(1).
+    if (data[off + 16] !== 8) fail("unexpected bit depth (expected 8)");
+    if (data[off + 17] !== 2) fail("unexpected colour type (expected 2, truecolour RGB)");
+  }
+  if (type === "IEND") {
+    sawIend = true;
+    if (len !== 0) fail("IEND must be empty");
+    off = chunkEnd;
+    break;
+  }
+  off = chunkEnd;
+}
+if (!sawIhdr) fail("missing IHDR");
+if (!sawIend) fail("missing IEND");
+if (off !== data.length) fail("trailing bytes after IEND");
+if (width !== EXPECT_W || height !== EXPECT_H) {
+  fail(`dimensions are ${width}x${height}, expected ${EXPECT_W}x${EXPECT_H}`);
+}
+
 mkdirSync(OUT_DIR, { recursive: true });
-copyFileSync(SRC, DEST);
-const bytes = statSync(DEST).size;
-if (bytes > 1024 * 1024) throw new Error(`entry.png is ${bytes} bytes, over the 1 MiB limit`);
-// Re-read the copy and confirm it is byte-identical to the validated source.
-const copied = readFileSync(DEST);
-if (!copied.equals(png)) throw new Error("copied entry.png differs from the validated source");
-console.log(`entry.png OK: ${info.width}x${info.height}, ${info.chunks} chunks, ${bytes} bytes -> ${DEST}`);
+copyFileSync(SOURCE, OUT);
+const written = statSync(OUT).size;
+if (written !== data.length) fail("copied file size differs from source");
+console.log(`entry.png OK: ${width}x${height}, ${written} bytes -> ${OUT}`);
